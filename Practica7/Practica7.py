@@ -1,8 +1,6 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 
 df = pd.read_csv('canciones_1960-2023.csv')
@@ -15,28 +13,24 @@ def convert_min_sec_to_ms(min_sec):
 
 df['Track Duration (ms)'] = df['Track Duration (ms)'].apply(convert_min_sec_to_ms)
 
-x = df['Track Duration (ms)'].to_numpy().reshape(-1, 1)  # Convierte a matriz NumPy
-y = df['Track Duration (ms)']
+df_promedio = df.groupby(['Track Duration (ms)', 'Year_release'])['Popularity'].mean().reset_index()
 
-print(len(x))
-print(len(y))
+x = df_promedio[['Track Duration (ms)']].to_numpy()
+y = df_promedio['Popularity']
 
 X_train, X_test, Y_train, Y_test = train_test_split(x, y, test_size=0.1, random_state=42)
 
-knn = KNeighborsClassifier(n_neighbors=3)
-scores = cross_val_score(knn, x, y, cv=3)
+regression_model = LinearRegression()
+regression_model.fit(X_train, Y_train)
 
-knn.fit(X_train, Y_train)
-
-y_pred = knn.predict(X_test)
-
-accuracy = accuracy_score(Y_test, y_pred)
-print("Exactitud del modelo K-NN:", accuracy)
+y_pred = regression_model.predict(X_test)
 
 plt.figure(figsize=(10,6))
-plt.scatter(x, y)
-plt.title('Gráfica de Dispersión del Conjunto de Datos de duración de pista')
+plt.scatter(X_test, Y_test, label='Datos reales')
+plt.plot(X_test, y_pred, color='red', label='Predicciones')
+plt.title('Regresión lineal de la duración de la pista vs. Popularidad')
 plt.xlabel('Duración (ms)')
-plt.ylabel('Duración (ms)')
-plt.savefig('grafica_de_clasificacion_duracion_pista.jpg', format='jpg')
+plt.ylabel('Popularidad')
+plt.legend()
+plt.savefig('regresion_duracion_pista_popularidad.jpg', format='jpg')
 plt.show()
